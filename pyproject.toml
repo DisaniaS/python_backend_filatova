@@ -1,0 +1,21 @@
+[project]
+name = "python-backend-filatova"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "DisaniaS",email = "serzh.30303@mail.ru"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi (>=0.115.8,<0.116.0)",
+    "uvicorn (>=0.34.0,<0.35.0)",
+    "sqlalchemy (>=2.0.37,<3.0.0)",
+    "psycopg2-binary (>=2.9.10,<3.0.0)",
+    "pydantic[dotenv,email] (>=2.10.6,<3.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
