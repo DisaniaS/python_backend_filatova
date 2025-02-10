@@ -7,15 +7,22 @@ from typing import List
 from user.schema import User, UserCreate, UserLogin, UserLoginResponse
 from user.repository import UserRepository
 
-from utils.jwt_auth import create_access_token
+from utils.jwt_auth import create_access_token, decode_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from fastapi.security import OAuth2PasswordBearer
 
 import bcrypt
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/", response_model=List[User])
-def list_users(skip: int = 0, max: int = 10, users: UserRepository = Depends()):
+def list_users(token: str = Depends(oauth2_scheme), skip: int = 0, max: int = 10, users: UserRepository = Depends()):
+    payload = decode_token(token)
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Неверный токен или срок действия истёк")
+
     db_users = users.all(skip=skip, max=max)
     return parse_obj_as(List[User], db_users)
 
@@ -51,7 +58,7 @@ def login(user: UserLogin, users: UserRepository = Depends()):
         raise HTTPException(status_code=401, detail="Неверный логин или пароль")
 
     token_data = {"sub": user.login}
-    access_token = create_access_token(data=token_data, expires_delta=timedelta(minutes=300000))
+    access_token = create_access_token(data=token_data, expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
 
     response = UserLoginResponse(
         id=db_user.id,

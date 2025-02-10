@@ -5,7 +5,7 @@ from core.config.config import settings
 
 # Секретный ключ для подписи токенов
 SECRET_KEY = settings.jwt.key
-ALGORITHM = "HS256"  # Алгоритм подписи
+ALGORITHM = settings.jwt.algorithm
 ACCESS_TOKEN_EXPIRE_MINUTES = 3000000  # Время жизни токена
 
 # Функция для создания JWT-токена

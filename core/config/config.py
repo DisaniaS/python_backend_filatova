@@ -18,6 +18,7 @@ class DBSettings(BaseSettings):
 
 class JWTSettings(BaseSettings):
     key: str = 'key'
+    algorithm: str = 'algorithm'
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
