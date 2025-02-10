@@ -19,3 +19,12 @@ class User(UserBase):
     @classmethod
     def from_attributes(cls, **kwargs):
         return cls(**kwargs)
+
+class UserLogin(BaseModel):
+    login: str
+    password: str
+
+class UserLoginResponse(User):
+    token: str
+    class Config:
+        from_attributes = True

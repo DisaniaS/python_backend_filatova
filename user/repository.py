@@ -7,6 +7,8 @@ from core.config.dependencies import get_db
 from user.schema import UserCreate
 from user.model import User
 
+import bcrypt
+
 
 class UserRepository:
     def __init__(self, db: Session = Depends(get_db)):
@@ -24,15 +26,15 @@ class UserRepository:
         query = self.db.query(User)
         return query.offset(skip).limit(max).all()
 
-    def create(self, user: UserCreate) -> User:
-        faked_pass_hash = user.password + "__you_must_hash_me"
+    def registration(self, user: UserCreate) -> User:
+        hashed_password = bcrypt.hashpw(user.password.encode(), bcrypt.gensalt())
 
         db_user = User(
             login=user.login,
             fname=user.fname,
             lname=user.lname,
             sname=user.sname,
-            password=faked_pass_hash
+            password=hashed_password.decode()
         )
 
         self.db.add(db_user)

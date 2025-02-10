@@ -10,7 +10,7 @@ Model.metadata.create_all(bind=engine)
 
 main_app = FastAPI()
 
-main_app.include_router(user_router)
+main_app.include_router(user_router, prefix=settings.api.prefix)
 
 if __name__ == "__main__":
     uvicorn.run(

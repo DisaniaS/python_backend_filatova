@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class RunConfig(BaseModel):
     host: str = '127.0.0.1'
-    port: int = 8900
+    port: int = 8000
 
 class ApiPrefix(BaseModel):
     prefix: str = '/api'
@@ -16,6 +16,9 @@ class DBSettings(BaseSettings):
     host: str = "localhost"
     port: int = 5432
 
+class JWTSettings(BaseSettings):
+    key: str = 'key'
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file = ".env",
@@ -26,5 +29,6 @@ class Settings(BaseSettings):
     run: RunConfig = RunConfig()
     api: ApiPrefix = ApiPrefix()
     db: DBSettings = DBSettings()
+    jwt: JWTSettings = JWTSettings()
 
 settings = Settings()
