@@ -9,5 +9,5 @@ class User(Model):
    login = Column(String, unique=True, index=True)
    fname = Column(String)
    lname = Column(String)
-   sname = Column(String)
+   sname = Column(String, nullable=True)
    password = Column(String)

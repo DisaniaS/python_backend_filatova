@@ -1,4 +1,5 @@
 from datetime import timedelta
+from http.client import responses
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import parse_obj_as
@@ -38,24 +39,39 @@ def get_user(user_id: int, users: UserRepository = Depends()):
 
     return User.model_validate(db_user)
 
-@router.post("/registration", response_model=User, status_code=status.HTTP_201_CREATED)
+@router.post("/registration", response_model=UserLoginResponse, status_code=status.HTTP_201_CREATED)
 def registration(user: UserCreate, users: UserRepository = Depends()):
     db_user = users.find_by_login(login=user.login)
     if db_user:
         raise HTTPException(
-            status_code=400,
+            status_code=409,
             detail="Логин занят"
         )
+    token_data = {"sub": user.login}
+    access_token = create_access_token(data=token_data, expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
 
     db_user = users.registration(user)
-    return User.model_validate(db_user)
+
+    response = UserLoginResponse(
+        id=db_user.id,
+        login=user.login,
+        fname=user.fname,
+        lname=user.lname,
+        sname=user.sname,
+        token=access_token
+    )
+    users.registration(user)
+    return response
 
 @router.post("/login", response_model=UserLoginResponse, status_code=status.HTTP_200_OK)
 def login(user: UserLogin, users: UserRepository = Depends()):
     db_user = users.find_by_login(user.login)
 
     if db_user is None or not bcrypt.checkpw(user.password.encode(), db_user.password.encode()):
-        raise HTTPException(status_code=401, detail="Неверный логин или пароль")
+        raise HTTPException(
+            status_code=401,
+            detail="Неверный логин или пароль"
+        )
 
     token_data = {"sub": user.login}
     access_token = create_access_token(data=token_data, expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
@@ -70,3 +86,13 @@ def login(user: UserLogin, users: UserRepository = Depends()):
     )
 
     return response
+
+@router.get("/check_auth", response_model=UserLoginResponse, status_code=status.HTTP_200_OK)
+def check_auth(token: str = Depends(oauth2_scheme), users: UserRepository = Depends()):
+    payload = decode_token(token)
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Вы не авторизованы")
+    login = payload.get("sub")
+    db_user = users.find_by_login(login)
+
+    return User.model_validate(db_user)
