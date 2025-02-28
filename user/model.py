@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Integer
+from sqlalchemy.orm import relationship
 
 from core.config.database import Model
 
@@ -11,3 +12,5 @@ class User(Model):
    lname = Column(String)
    sname = Column(String, nullable=True)
    password = Column(String)
+
+   reports = relationship("Report", back_populates="user")

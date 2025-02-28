@@ -1,5 +1,4 @@
 from datetime import timedelta
-from http.client import responses
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import parse_obj_as
@@ -19,7 +18,12 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/", response_model=List[User])
-def list_users(token: str = Depends(oauth2_scheme), skip: int = 0, max: int = 10, users: UserRepository = Depends()):
+def list_users(
+        token: str = Depends(oauth2_scheme),
+        skip: int = 0,
+        max: int = 10,
+        users: UserRepository = Depends()
+):
     payload = decode_token(token)
     if payload is None:
         raise HTTPException(status_code=401, detail="Неверный токен или срок действия истёк")
@@ -28,7 +32,10 @@ def list_users(token: str = Depends(oauth2_scheme), skip: int = 0, max: int = 10
     return parse_obj_as(List[User], db_users)
 
 @router.get("/{user_id}", response_model=User)
-def get_user(user_id: int, users: UserRepository = Depends()):
+def get_user(
+        user_id: int,
+        users: UserRepository = Depends()
+):
     db_user = users.find(user_id)
 
     if db_user is None:
@@ -40,7 +47,10 @@ def get_user(user_id: int, users: UserRepository = Depends()):
     return User.model_validate(db_user)
 
 @router.post("/registration", response_model=UserLoginResponse, status_code=status.HTTP_201_CREATED)
-def registration(user: UserCreate, users: UserRepository = Depends()):
+def registration(
+        user: UserCreate,
+        users: UserRepository = Depends()
+):
     db_user = users.find_by_login(login=user.login)
     if db_user:
         raise HTTPException(
@@ -64,7 +74,10 @@ def registration(user: UserCreate, users: UserRepository = Depends()):
     return response
 
 @router.post("/login", response_model=UserLoginResponse, status_code=status.HTTP_200_OK)
-def login(user: UserLogin, users: UserRepository = Depends()):
+def login(
+        user: UserLogin,
+        users: UserRepository = Depends()
+):
     db_user = users.find_by_login(user.login)
 
     if db_user is None or not bcrypt.checkpw(user.password.encode(), db_user.password.encode()):
@@ -88,7 +101,10 @@ def login(user: UserLogin, users: UserRepository = Depends()):
     return response
 
 @router.get("/check_auth", response_model=UserLoginResponse, status_code=status.HTTP_200_OK)
-def check_auth(token: str = Depends(oauth2_scheme), users: UserRepository = Depends()):
+def check_auth(
+        token: str = Depends(oauth2_scheme),
+        users: UserRepository = Depends()
+):
     payload = decode_token(token)
     if payload is None:
         raise HTTPException(status_code=401, detail="Вы не авторизованы")
