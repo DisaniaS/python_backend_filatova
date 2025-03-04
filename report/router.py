@@ -10,23 +10,22 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
-@router.post("/", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
 async def create_report(
     number: int = Form(...),
-    user_id: int = Form(...),
     file: UploadFile = File(...),
     report_service: ReportService = Depends(),
     token: dict = Depends(check_authenticate)
 ):
-    return await report_service.create_report(number, user_id, file)
+    return await report_service.create_report(token, number, file)
 
-@router.get("/{report_id}", response_model=ReportResponse)
+@router.get("/{number}", response_model=ReportResponse)
 def get_report(
-    report_id: int,
+    number: int,
     report_service: ReportService = Depends(),
     token: dict = Depends(check_authenticate)
 ):
-    return report_service.get_report(report_id)
+    return report_service.get_report(number)
 
 @router.get("/", response_model=PaginatedReportResponse)
 def get_all_reports(

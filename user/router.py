@@ -3,7 +3,7 @@ from typing import List
 from .service import UserService
 from user.schema import User, UserCreate, UserLogin, UserLoginResponse
 from fastapi.security import OAuth2PasswordBearer
-from utils.authenticate import check_authenticate
+from utils.authenticate import check_authenticate, check_admin
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -11,16 +11,16 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get(
-    "/",
+    "",
     response_model=List[User]
 )
 def list_users(
-    token: str = Depends(oauth2_scheme),
+    token: dict = Depends(check_admin),
     skip: int = 0,
     max: int = 10,
     user_service: UserService = Depends()
 ):
-    return user_service.list_users(token, skip=skip, max=max)
+    return user_service.list_users(skip=skip, max=max)
 
 @router.get(
     "/{user_id}",

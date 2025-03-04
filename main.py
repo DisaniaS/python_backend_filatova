@@ -20,6 +20,7 @@ main_app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 if __name__ == "__main__":

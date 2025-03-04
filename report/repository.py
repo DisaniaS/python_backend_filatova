@@ -27,6 +27,10 @@ class ReportRepository:
         query = self.db.query(Report)
         return query.join(Report.user).filter(Report.id == report_id).first()
 
+    def find_by_number(self, number: int) -> Report | None:
+        query = self.db.query(Report)
+        return query.join(Report.user).filter(Report.number == number).first()
+
     def all(self, skip: int = 0, max: int = 100) -> List[Type[Report]]:
         return (
             self.db.query(Report)

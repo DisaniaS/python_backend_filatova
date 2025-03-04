@@ -32,14 +32,18 @@ class UserService:
             fname=user.fname,
             lname=user.lname,
             sname=user.sname,
-            token=access_token
+            token=access_token,
+            is_admin=db_user.is_admin
         )
 
     def login(self, user: UserLogin) -> UserLoginResponse:
         db_user = self.user_repository.find_by_login(user.login)
         if db_user is None or not bcrypt.checkpw(user.password.encode(), db_user.password.encode()):
             raise HTTPException(status_code=401, detail="Неверный логин или пароль")
-        token_data = {"sub": user.login}
+        token_data = {
+            "sub": user.login,
+            "is_admin": db_user.is_admin
+        }
         access_token = create_access_token(data=token_data, expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
         print(access_token)
         return UserLoginResponse(
@@ -48,7 +52,8 @@ class UserService:
             fname=db_user.fname,
             lname=db_user.lname,
             sname=db_user.sname,
-            token=access_token
+            token=access_token,
+            is_admin=db_user.is_admin
         )
 
     def check_auth(self, token: str) -> UserLoginResponse:
