@@ -9,7 +9,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi (>=0.115.8,<0.116.0)",
-    "uvicorn (>=0.34.0,<0.35.0)",
+    "uvicorn[standard] (>=0.34.0,<0.35.0)",
     "sqlalchemy (>=2.0.37,<3.0.0)",
     "psycopg2-binary (>=2.9.10,<3.0.0)",
     "pydantic[dotenv,email] (>=2.10.6,<3.0.0)",
@@ -17,7 +17,8 @@ dependencies = [
     "passlib (>=1.7.4,<2.0.0)",
     "bcrypt (>=4.2.1,<5.0.0)",
     "python-jose",
-    "python-multipart (>=0.0.20,<0.0.21)"
+    "python-multipart (>=0.0.20,<0.0.21)",
+    "websockets (>=15.0.1,<16.0.0)"
 ]
 
 
