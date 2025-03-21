@@ -1,11 +1,14 @@
 version: "3.9"
 services:
   db:
-    container_name: postgresql
+    container_name: postgres
     image: postgres
     ports:
-      - "${DB_PORT}:5432"
+      - "${APP_DB_PORT}:5432"
     environment:
-      - POSTGRES_USER=${DB_USERNAME}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_DATABASE}
+      - POSTGRES_USER=${APP_DB_USERNAME}
+      - POSTGRES_PASSWORD=${APP_DB_PASSWORD}
+      - POSTGRES_DB=${APP_DB_DATABASE}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+        - ./pgdata:/var/lib/postgresql/data/pgdata

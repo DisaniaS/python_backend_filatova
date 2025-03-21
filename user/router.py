@@ -40,8 +40,7 @@ def get_user(
 )
 def registration(
     user: UserCreate,
-    user_service: UserService = Depends(),
-    token: dict = Depends(check_authenticate)
+    user_service: UserService = Depends()
 ):
     return user_service.registration(user)
 

@@ -23,6 +23,10 @@ class ReportRepository:
         self.db.refresh(db_report)
         return db_report
 
+    def delete(self, report_id: int):
+        self.db.query(Report).filter(Report.id == report_id).delete()
+        self.db.commit()
+
     def find_by_id(self, report_id: int) -> Report | None:
         query = self.db.query(Report)
         return query.join(Report.user).filter(Report.id == report_id).first()

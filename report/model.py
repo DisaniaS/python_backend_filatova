@@ -5,7 +5,7 @@ from core.config.database import Model
 
 
 class Report(Model):
-   __tablename__ = "report" ##todo поправить имя на "reports"
+   __tablename__ = "reports"
    id = Column(Integer, primary_key=True, autoincrement=True)
    ts = Column(DateTime, nullable=False, default=datetime.now())
    user_id = Column(Integer, ForeignKey("users.id"))
