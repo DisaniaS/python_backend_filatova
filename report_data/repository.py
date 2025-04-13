@@ -40,3 +40,6 @@ class ReportDataRepository:
 
     def get_by_report_id(self, report_id: int):
         return self.db.query(ReportData).filter(ReportData.report_id == report_id).first()
+
+    def get_all(self, existing_systems: set):
+        return self.db.query(ReportData).filter(ReportData.system_number.notin_(existing_systems))
