@@ -50,7 +50,8 @@ class ReportDataService:
             table_position_exact = data.get("table_position_exact"),
             table_position_repeated = data.get("table_position_repeated"),
             humidity = data.get("humidity"),
-            vibration_level = data.get("vibration_level")
+            vibration_level = data.get("vibration_level"),
+            calculated = False
         ))
 
     def _process_paragraph(self, paragraph, data):

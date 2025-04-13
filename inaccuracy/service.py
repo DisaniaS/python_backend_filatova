@@ -1,13 +1,17 @@
-import os
+from datetime import datetime
+from pathlib import Path
+from typing import List
 
 from fastapi import HTTPException
 from fastapi.params import Depends
+from openpyxl.styles import Font
 from openpyxl.workbook import Workbook
 from openpyxl import load_workbook
 from starlette import status
 from starlette.responses import FileResponse
 
 from report_data.repository import ReportDataRepository
+from report_data.model import ReportData
 
 
 class InaccuracyService:
@@ -15,51 +19,124 @@ class InaccuracyService:
             self,
             report_data_repo: ReportDataRepository = Depends()
     ):
-        self.report_data_repo = report_data_repo,
-        self.table_path = "inaccuracy/inaccuracytest.xlsx"
+        self.report_data_repo = report_data_repo
+        self.table_path = Path("inaccuracy/inaccuracytest.xlsx").absolute()
+
+        self.table_path.parent.mkdir(parents=True, exist_ok=True)
 
     def download_inaccuracy(self) -> FileResponse:
-        if not os.path.exists(self.table_path):
+        if not self.table_path.exists():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Таблица не найдена",
             )
+
+            # Добавляем timestamp для предотвращения кэширования
+        timestamp = int(datetime.now().timestamp())
+        filename = f"inaccuracy_{timestamp}.xlsx"
+
         return FileResponse(
-            self.table_path,
-            content_disposition_type="attachment",
-            filename=os.path.basename(self.table_path),
+            path=self.table_path,
+            filename=filename,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
         )
 
+    def get_uncalculated_reports(self) -> List[ReportData]:
+        """Получает отчеты, которые еще не были рассчитаны"""
+        return self.report_data_repo.db.query(ReportData)\
+            .filter(ReportData.calculated == False)\
+            .all()
 
-    # Функция для расчета погрешности
-    def calculate_error(self, azimuth_exact, azimuth_repeated):
-        return (max(azimuth_exact, azimuth_repeated) - min(azimuth_exact, azimuth_repeated)) / 2
+    def calculate_errors_for_report(self, report: ReportData) -> dict:
+        """Вычисляет погрешности для одного отчета"""
+        return {
+            "Год": report.test_date.year if report.test_date else datetime.now().year,
+            "Номер изделия": report.system_number,
+            "Погрешность НКУ": self._calculate_error(
+                report.azimuth_nku,
+                report.repeated_azimuth_nku
+            ),
+            "Погрешность -50": self._calculate_error(
+                report.azimuth_minus_50,
+                report.repeated_azimuth_minus_50
+            ),
+            "Погрешность +50": self._calculate_error(
+                report.azimuth_plus_50,
+                report.repeated_azimuth_plus_50
+            )
+        }
 
-    # Функция для добавления данных в Excel
-    def add_errors_to_excel(self, file_path):
-        # Загрузка существующего Excel-файла
+    def _calculate_error(self, exact: float, repeated: float) -> float:
+        """Вычисляет погрешность по формуле (max - min)/2"""
+        if None in (exact, repeated):
+            return None
+        return (max(exact, repeated) - min(exact, repeated)) / 2
+
+    def update_excel_file(self):
+        """Добавляет новые данные в Excel-файл"""
+        # Получаем только нерассчитанные отчеты
+        uncalculated_reports = self.get_uncalculated_reports()
+
+        if not uncalculated_reports:
+            return  # Нет новых данных для добавления
+
         try:
-            book = load_workbook(file_path)
-            sheet = book.active
-            existing_systems = set(sheet['B'])  # Номера систем, которые уже есть в таблице
+            wb = load_workbook(self.table_path)
+            ws = wb.active
         except FileNotFoundError:
-            # Если файл не существует, создаем новый
-            book = Workbook()
-            sheet = book.active
-            sheet.append(["Дата внесения в систему", "Номер системы", "Погрешность НКУ", "Погрешность -50", "Погрешность +50"])
-            existing_systems = set()
+            wb = Workbook()
+            ws = wb.active
+            # Добавляем заголовки, если файл новый
+            ws.append(["Год", "Номер изделия", "Погрешность НКУ", "Погрешность -50", "Погрешность +50"])
 
-        # Получение данных из базы данных для систем, которых еще нет в таблице
-        db_reports = self.report_data_repo.get_all(existing_systems)
+        # Добавляем данные для каждого нерассчитанного отчета
+        for report in uncalculated_reports:
+            error_data = self.calculate_errors_for_report(report)
+            ws.append([
+                error_data["Год"],
+                error_data["Номер изделия"],
+                error_data["Погрешность НКУ"],
+                error_data["Погрешность -50"],
+                error_data["Погрешность +50"]
+            ])
+            # Помечаем отчет как рассчитанный
+            report.calculated = True
+            self.report_data_repo.db.commit()
 
-        # Расчет погрешностей и добавление их в таблицу
-        for data in db_reports:
-            error_nku = self.calculate_error(data.azimuth_nku, data.repeated_azimuth_nku)
-            error_minus_50 = self.calculate_error(data.azimuth_minus_50, data.repeated_azimuth_minus_50)
-            error_plus_50 = self.calculate_error(data.azimuth_plus_50, data.repeated_azimuth_plus_50)
+        try:
+            self._apply_formatting(ws)
+            wb.save(self.table_path)
+            wb.close()  # Важно закрыть файл
 
-            # Добавление строки в таблицу
-            sheet.append([data.ts, data.system_number, error_nku, error_minus_50, error_plus_50])
+            # Проверяем, что файл обновился
+            if not self.table_path.exists():
+                raise Exception("Файл не был создан")
 
-        # Сохранение изменений в файле
-        book.save(file_path)
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка при обновлении файла: {str(e)}"
+            )
+
+    def _apply_formatting(self, ws):
+        """Настраивает оформление таблицы"""
+        # Ширина столбцов
+        column_widths = {'A': 8, 'B': 15, 'C': 18, 'D': 18, 'E': 18}
+        for col, width in column_widths.items():
+            ws.column_dimensions[col].width = width
+
+        # Жирные заголовки (если есть данные)
+        if ws.max_row > 1:
+            for cell in ws[1]:
+                cell.font = Font(bold=True)
+
+        # Формат чисел для всех числовых ячеек
+        for row in ws.iter_rows(min_row=2):
+            for cell in row[2:]:  # Столбцы C-E
+                if isinstance(cell.value, (int, float)):
+                    cell.number_format = '0.00'

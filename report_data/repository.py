@@ -32,7 +32,9 @@ class ReportDataRepository:
             table_position_exact = report.table_position_exact,
             table_position_repeated =report.table_position_repeated,
             humidity=report.humidity,
-            vibration_level=report.vibration_level
+            vibration_level=report.vibration_level,
+
+            calculated=report.calculated
         )
         self.db.add(db_report_data)
         self.db.commit()

@@ -22,6 +22,8 @@ class ReportDataBase(BaseModel):
     humidity: float
     vibration_level: float
 
+    calculated: bool
+
 class ReportDataCreate(ReportDataBase):
     pass
 

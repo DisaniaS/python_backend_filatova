@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey, String
+from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey, String, Boolean
 from sqlalchemy.orm import relationship
 
 from core.config.database import Model
@@ -32,5 +32,7 @@ class ReportData(Model):
     table_position_repeated = Column(Float)         # Положение стола для повторного азимута [°]
     humidity = Column(Float)                        # Влажность [%]
     vibration_level = Column(Float)                 # Уровень вибрации [дБ]
+
+    calculated = Column(Boolean, default=False)
 
     report = relationship("Report", foreign_keys=[report_id])
