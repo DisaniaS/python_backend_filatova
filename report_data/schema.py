@@ -1,6 +1,11 @@
 from pydantic import BaseModel
 
 class ReportDataBase(BaseModel):
+    system_name: str
+    test_date: str
+    department: str
+    system_type: str
+
     report_id: int
     test_time: float
     system_number: int
@@ -14,6 +19,8 @@ class ReportDataBase(BaseModel):
     azimuth_determination_time: float
     table_position_exact: float
     table_position_repeated: float
+    humidity: float
+    vibration_level: float
 
 class ReportDataCreate(ReportDataBase):
     pass

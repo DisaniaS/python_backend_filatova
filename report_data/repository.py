@@ -13,6 +13,12 @@ class ReportDataRepository:
     def create(self, report: ReportDataCreate):
         db_report_data = ReportData(
             report_id=report.report_id,
+
+            system_name=report.system_name,
+            test_date=report.test_date,
+            department=report.department,
+            system_type=report.system_type,
+
             test_time = report.test_time,
             system_number = report.system_number,
             latitude = report.latitude,
@@ -25,6 +31,8 @@ class ReportDataRepository:
             azimuth_determination_time = report.azimuth_determination_time,
             table_position_exact = report.table_position_exact,
             table_position_repeated =report.table_position_repeated,
+            humidity=report.humidity,
+            vibration_level=report.vibration_level
         )
         self.db.add(db_report_data)
         self.db.commit()
