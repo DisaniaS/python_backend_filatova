@@ -1,6 +1,9 @@
+from typing import Dict, Any
+
 from fastapi import APIRouter, Depends, status, HTTPException
 from starlette.responses import JSONResponse
 
+from .schema import ErrorResponse
 from .service import InaccuracyService
 from utils.authenticate import check_authenticate
 
@@ -13,15 +16,26 @@ def get_table(
 ):
     return inaccuracy_service.download_inaccuracy()
 
-# @router.post("/update", response_class=FileResponse)
-# def update_table(
-#     inaccuracy_service: InaccuracyService = Depends(),
-#     token: dict = Depends(check_authenticate),
-# ):
-#     """
-#     Обновить таблицу с погрешностями.
-#     """
-#     return inaccuracy_service.update_table()
+
+@router.get("/error-data", response_model=ErrorResponse)
+def get_error_data(
+        inaccuracy_service: InaccuracyService = Depends(),
+        token: dict = Depends(check_authenticate),
+) -> Dict[str, Any]:
+    """
+    Получение данных о погрешностях для построения графиков
+
+    Args:
+        inaccuracy_service: Сервис для работы с погрешностями
+        token: Токен аутентификации
+
+    Returns:
+        Dict[str, Any]: Словарь с данными погрешностей и статистикой
+
+    Raises:
+        HTTPException: Если возникла ошибка при получении данных
+    """
+    return inaccuracy_service.get_error_data()
 
 @router.post("/calculate")
 def calculate_errors(

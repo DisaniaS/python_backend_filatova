@@ -28,30 +28,30 @@ class ReportService:
             buffer.write(await file.read())
         db_user = self.user_repo.find_by_login(token.get("sub"))
         report_id = 0
-        #try:
-        db_report = self.report_repo.create(ReportCreate(
-            path=file_path,
-            user_id=db_user.id,
-            number=number
-        ))
-        report_id=db_report.id
-        await self.report_data_service.create_report_data(db_report.path, report_id)
-        return self._format_report_response(db_report)
-        #except Exception as e:
-        #    if os.path.exists(file_path):
-        #        os.remove(file_path)
-        #    if report_id!=0:
-        #        self.report_repo.delete(report_id)
-        #    if "already exists" in str(e):
-        #        raise HTTPException(
-        #            status_code=409,
-        #            detail="Отчет по изделию данного номера уже был загружен ранее"
-        #        )
-        #    else:
-        #        raise HTTPException(
-        #            status_code=500,
-        #            detail="Ошибка чтения файла" + str(e)
-        #        )
+        try:
+            db_report = self.report_repo.create(ReportCreate(
+                path=file_path,
+                user_id=db_user.id,
+                number=number
+            ))
+            report_id=db_report.id
+            await self.report_data_service.create_report_data(db_report.path, report_id)
+            return self._format_report_response(db_report)
+        except Exception as e:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            if report_id!=0:
+                self.report_repo.delete(report_id)
+            if "already exists" in str(e):
+                raise HTTPException(
+                    status_code=409,
+                    detail="Отчет по изделию данного номера уже был загружен ранее"
+                )
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Ошибка чтения файла" + str(e)
+                )
 
     def get_report(self, number: int) -> ReportResponse:
         db_report = self.report_repo.find_by_number(number)
