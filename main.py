@@ -8,6 +8,7 @@ from user.router import router as user_router
 from report.router import router as report_router
 from message.router import router as message_router
 from inaccuracy.router import router as inaccuracy_router
+from product.router import router as product_router
 
 Model.metadata.create_all(bind=engine)
 
@@ -17,6 +18,7 @@ main_app.include_router(user_router, prefix=settings.api.prefix)
 main_app.include_router(report_router, prefix=settings.api.prefix)
 main_app.include_router(message_router, prefix=settings.api.prefix)
 main_app.include_router(inaccuracy_router, prefix=settings.api.prefix)
+main_app.include_router(product_router, prefix=settings.api.prefix)
 
 main_app.add_middleware(
     CORSMiddleware,
