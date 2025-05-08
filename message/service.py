@@ -29,5 +29,5 @@ class MessageService:
             user_id=db_message.user_id,
             ts=db_message.ts.isoformat(),
             user_name=f"{user.fname} {user.lname}",
-            user_is_admin=user.is_admin
+            user_role=user.role.value,
         )

@@ -21,4 +21,4 @@ class Message(MessageBase):
 
 class MessageResponse(Message):
     user_name: str
-    user_is_admin: bool
+    user_role: str

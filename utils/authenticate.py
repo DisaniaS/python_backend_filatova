@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from starlette.websockets import WebSocket
 
+from user.model import UserRole
 from user.repository import UserRepository
 from .jwt_auth import decode_token
 
@@ -23,8 +24,8 @@ def check_admin(token: str = Depends(oauth2_scheme)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Неверный токен или срок действия истёк"
         )
-    print(payload, payload.get("is_admin"))
-    if not payload.get("is_admin"):
+    print(payload, payload.get("role"))
+    if payload.get("role")!=UserRole.ADMIN.value:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="У вас недостаточно прав для выполнения действия"

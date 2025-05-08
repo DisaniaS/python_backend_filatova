@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from typing import List
 from .service import UserService
-from user.schema import User, UserCreate, UserLogin, UserLoginResponse
+from user.schema import User, UserCreate, UserLogin, UserLoginResponse, UpdateUserRole
 from fastapi.security import OAuth2PasswordBearer
 from utils.authenticate import check_authenticate, check_admin
 
@@ -22,17 +22,7 @@ def list_users(
 ):
     return user_service.list_users(skip=skip, max=max)
 
-@router.get(
-    "/{user_id}",
-    response_model=User
-)
-def get_user(
-    user_id: int,
-    user_service: UserService = Depends(),
-    token: dict = Depends(check_authenticate)
-):
-    return user_service.get_user(user_id)
-
+# Сначала определяем конкретные маршруты
 @router.post(
     "/registration",
     response_model=UserLoginResponse,
@@ -65,3 +55,28 @@ def check_auth(
     user_service: UserService = Depends()
 ):
     return user_service.check_auth(token)
+
+# Затем определяем маршруты с параметрами
+@router.get(
+    "/{user_id}",
+    response_model=User
+)
+def get_user(
+    user_id: int,
+    user_service: UserService = Depends(),
+    token: dict = Depends(check_authenticate)
+):
+    return user_service.get_user(user_id)
+
+@router.put(
+    "/{user_id}/role",
+    response_model=User,
+    status_code=status.HTTP_200_OK
+)
+def update_user_role(
+    user_id: int,
+    update_data: UpdateUserRole,
+    user_service: UserService = Depends(),
+    token: dict = Depends(check_admin)  # Только админ может менять роли
+):
+    return user_service.update_user_role(user_id, update_data)
