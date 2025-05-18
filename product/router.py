@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, Body, HTTPException, status
 from starlette.responses import JSONResponse
 
@@ -15,17 +15,6 @@ def create_product(
         product_service: ProductService = Depends(),
         token: dict = Depends(check_authenticate),
 ) -> ProductResponse:
-    """
-    Creates a new product
-
-    Args:
-        product: Product data
-        product_service: Service for products
-        token: Authentication token
-
-    Returns:
-        ProductResponse: Created product
-    """
     return product_service.create_product(product)
 
 
@@ -34,16 +23,6 @@ def get_products(
         product_service: ProductService = Depends(),
         token: dict = Depends(check_authenticate),
 ) -> ProductList:
-    """
-    Gets all products grouped by acceptance status
-
-    Args:
-        product_service: Service for products
-        token: Authentication token
-
-    Returns:
-        ProductList: Object with accepted and rejected products
-    """
     return product_service.get_products()
 
 
@@ -54,18 +33,6 @@ def update_product_status(
         product_service: ProductService = Depends(),
         token: dict = Depends(check_authenticate),
 ) -> ProductResponse:
-    """
-    Updates the acceptance status of a product
-
-    Args:
-        product_id: ID of the product to update
-        is_accepted: New acceptance status
-        product_service: Service for products
-        token: Authentication token
-
-    Returns:
-        ProductResponse: Updated product
-    """
     return product_service.update_product_status(product_id, is_accepted)
 
 
@@ -75,15 +42,25 @@ def get_products_by_report(
         product_service: ProductService = Depends(),
         token: dict = Depends(check_authenticate),
 ) -> List[ProductResponse]:
-    """
-    Gets products associated with a specific report
-
-    Args:
-        report_number: The report number to find products for
-        product_service: Service for products
-        token: Authentication token
-
-    Returns:
-        List[ProductResponse]: List of products associated with the report
-    """
     return product_service.get_products_by_report_number(report_number)
+
+
+@router.post("/check-status", response_model=Dict[str, int])
+async def check_products_status(
+    product_service: ProductService = Depends()
+) -> Dict[str, int]:
+    """
+    Проверяет и обновляет статус изделий на основе их погрешностей.
+    Возвращает количество проверенных, принятых и непринятых изделий.
+    """
+    return product_service.check_and_update_products_status()
+
+
+@router.get("/status", response_model=Dict[str, List[Dict[str, Any]]])
+async def get_products_status(
+    product_service: ProductService = Depends()
+) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    Получает список принятых и непринятых изделий.
+    """
+    return product_service.get_products_status()

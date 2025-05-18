@@ -3,7 +3,7 @@ from typing import Dict, Any
 from fastapi import APIRouter, Depends, status, HTTPException
 from starlette.responses import JSONResponse
 
-from .schema import ErrorResponse
+from .schema import ErrorResponse, CorrelationMatrix
 from .service import InaccuracyService
 from utils.authenticate import check_authenticate
 
@@ -24,16 +24,6 @@ def get_error_data(
 ) -> Dict[str, Any]:
     """
     Получение данных о погрешностях для построения графиков
-
-    Args:
-        inaccuracy_service: Сервис для работы с погрешностями
-        token: Токен аутентификации
-
-    Returns:
-        Dict[str, Any]: Словарь с данными погрешностей и статистикой
-
-    Raises:
-        HTTPException: Если возникла ошибка при получении данных
     """
     return inaccuracy_service.get_error_data()
 
@@ -94,4 +84,30 @@ def get_calculation_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ошибка при получении статуса расчетов: {str(e)}"
+        )
+
+@router.get("/correlation-matrix", response_model=CorrelationMatrix)
+def get_correlation_matrix(
+    inaccuracy_service: InaccuracyService = Depends(),
+    token: dict = Depends(check_authenticate),
+):
+    """
+    Получение матрицы корреляций, причин погрешностей и мероприятий
+    
+    Args:
+        inaccuracy_service: Сервис для работы с погрешностями
+        token: Токен аутентификации
+        
+    Returns:
+        CorrelationMatrix: Матрица корреляций и список причин с мероприятиями
+        
+    Raises:
+        HTTPException: Если возникла ошибка при получении данных
+    """
+    try:
+        return inaccuracy_service.create_correlation_matrix()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при получении матрицы корреляций: {str(e)}"
         )

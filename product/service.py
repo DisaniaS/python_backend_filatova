@@ -1,19 +1,27 @@
-from typing import List
+from typing import List, Dict, Any
 from fastapi import Depends, HTTPException, status
 
 from .repository import ProductRepository
 from .schema import ProductCreate, ProductResponse, ProductList
 from report.repository import ReportRepository
+from report_data.repository import ReportDataRepository
+from report_data.model import ReportData
+from inaccuracy.service import InaccuracyService
 
 
 class ProductService:
     def __init__(
             self,
             product_repo: ProductRepository = Depends(),
-            report_repo: ReportRepository = Depends()
+            report_repo: ReportRepository = Depends(),
+            report_data_repo: ReportDataRepository = Depends(),
+            inaccuracy_service: InaccuracyService = Depends()
     ):
         self.product_repo = product_repo
         self.report_repo = report_repo
+        self.report_data_repo = report_data_repo
+        self.inaccuracy_service = inaccuracy_service
+        self.K_MAX = 3  # Максимальное допустимое значение погрешности
 
     def create_product(self, product: ProductCreate) -> ProductResponse:
         """
@@ -121,6 +129,102 @@ class ProductService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Ошибка при получении продуктов для отчета {report_number}: {str(e)}"
+            )
+
+    def check_and_update_products_status(self) -> Dict[str, int]:
+        """
+        Проверяет и обновляет статус изделий на основе их погрешностей.
+        Возвращает словарь с количеством обновленных изделий.
+        """
+        try:
+            # Получаем все изделия, которые еще не были проверены (is_accepted is None)
+            unverified_products = self.report_data_repo.db.query(ReportData)\
+                .filter(ReportData.is_accepted.is_(None))\
+                .all()
+
+            if not unverified_products:
+                return {
+                    "total_checked": 0,
+                    "accepted": 0,
+                    "rejected": 0
+                }
+
+            accepted_count = 0
+            rejected_count = 0
+
+            for product in unverified_products:
+                # Рассчитываем погрешности для изделия
+                error_data = self.inaccuracy_service.calculate_errors_for_report(product)
+                
+                # Получаем значения погрешностей
+                nku_error = error_data["Погрешность НКУ"]
+                minus_50_error = error_data["Погрешность -50"]
+                plus_50_error = error_data["Погрешность +50"]
+
+                # Проверяем, есть ли хотя бы одна погрешность меньше допустимого значения
+                is_accepted = False
+                if nku_error is not None and nku_error < self.K_MAX:
+                    is_accepted = True
+                elif minus_50_error is not None and minus_50_error < self.K_MAX:
+                    is_accepted = True
+                elif plus_50_error is not None and plus_50_error < self.K_MAX:
+                    is_accepted = True
+
+                # Обновляем статус изделия
+                product.is_accepted = is_accepted
+                
+                if is_accepted:
+                    accepted_count += 1
+                else:
+                    rejected_count += 1
+
+            # Сохраняем изменения в базе данных
+            self.report_data_repo.db.commit()
+
+            return {
+                "total_checked": len(unverified_products),
+                "accepted": accepted_count,
+                "rejected": rejected_count
+            }
+
+        except Exception as e:
+            self.report_data_repo.db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка при проверке статуса изделий: {str(e)}"
+            )
+
+    def get_products_status(self) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Получает список принятых и непринятых изделий
+        """
+        try:
+            accepted_products = self.report_data_repo.db.query(ReportData)\
+                .filter(ReportData.is_accepted == True)\
+                .all()
+
+            rejected_products = self.report_data_repo.db.query(ReportData)\
+                .filter(ReportData.is_accepted == False)\
+                .all()
+
+            def format_product(product):
+                return {
+                    "id": product.id,
+                    "system_number": product.system_number,
+                    "system_type": product.system_type,
+                    "department": product.department,
+                    "test_date": product.test_date
+                }
+
+            return {
+                "accepted": [format_product(p) for p in accepted_products],
+                "rejected": [format_product(p) for p in rejected_products]
+            }
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка при получении статуса изделий: {str(e)}"
             )
 
     def _format_product_response(self, product) -> ProductResponse:

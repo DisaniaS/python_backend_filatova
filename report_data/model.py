@@ -34,5 +34,6 @@ class ReportData(Model):
     vibration_level = Column(Float)                 # Уровень вибрации [дБ]
 
     calculated = Column(Boolean, default=False)
+    is_accepted = Column(Boolean, nullable=True)  # True - принято, False - не принято, None - не проверено
 
     report = relationship("Report", foreign_keys=[report_id])
